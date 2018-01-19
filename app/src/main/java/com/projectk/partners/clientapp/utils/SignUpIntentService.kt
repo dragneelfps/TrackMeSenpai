@@ -7,40 +7,45 @@ import android.util.Log
 import okhttp3.*
 import org.json.JSONObject
 
-class LoginIntentService : IntentService(TAG) {
+class SignUpIntentService : IntentService(TAG) {
     companion object {
-        val TAG = "LoginIntentService"
+        val TAG = "SignUpIntentService"
         val PENDING_RESULT_EXTRA = "pending_result"
         val RESPONSE_CODE = "response"
         val RESULT_CODE = 0
         val NULL_RESPONSE = 1
-        val INCORRECT_CRED_RESPONSE = 2
-        val CORRECT_CRED_RESPONSE = 3
-        val ERROR_RESPONSE = 4
-        val NO_INTERNET_ACCESS = 5
-        val SERVER_NOT_FOUND = 6
+        val NO_INTERNET_ACCESS = 3
+        val SERVER_NOT_FOUND = 4
+        val CREATED = 5
+        val VALIDATION_ERROR = 6
+        val ERRORS = "errors"
     }
 
     override fun onHandleIntent(intent: Intent?) {
-        Log.d(TAG, "Login Intent Service started")
+        Log.d(SignUpIntentService.TAG, "SignUp Intent Service started")
         if (intent == null) {
-            Log.d(TAG, "Null intent was seen")
+            Log.d(SignUpIntentService.TAG, "Null intent was seen")
             return
         }
+
+        val name = intent.getStringExtra("name")
         val user = intent.getStringExtra("user")
-        val pass = intent.getStringExtra("pass")
-        val reply = intent.getParcelableExtra<PendingIntent>(PENDING_RESULT_EXTRA)
+        val pass = intent.getStringExtra("password")
+        val email = intent.getStringExtra("email")
+        val reply = intent.getParcelableExtra<PendingIntent>(SignUpIntentService.PENDING_RESULT_EXTRA)
         val result = Intent()
 
         val json = JSONObject()
         json.put("username", user)
         json.put("password", pass)
+        json.put("name", name)
+        json.put("email", email)
 
         val client = OkHttpClient()
         val url = HttpUrl.Builder()
                 .scheme(scheme)
                 .host(baseUrl)
-                .addEncodedPathSegments(loginClientUrl)
+                .addEncodedPathSegments(registerClientUrl)
                 .build()
         val request = Request.Builder()
                 .url(url)
@@ -51,20 +56,20 @@ class LoginIntentService : IntentService(TAG) {
             response = client.newCall(request).execute()
             if (response == null) {
                 result.putExtra(RESPONSE_CODE, NULL_RESPONSE)
-            } else if (response.code() == 200) {
-                result.putExtra(RESPONSE_CODE, CORRECT_CRED_RESPONSE)
-            } else if (response.code() == 401) {
-                result.putExtra(RESPONSE_CODE, INCORRECT_CRED_RESPONSE)
+            } else if (response.code() == 201) {
+                result.putExtra(RESPONSE_CODE, CREATED)
             } else if (response.code() == 404) {
                 result.putExtra(RESPONSE_CODE, SERVER_NOT_FOUND)
-            } else {
-                result.putExtra(RESPONSE_CODE, ERROR_RESPONSE)
+            } else if (response.code() == 400) {
+                result.putExtra(RESPONSE_CODE, VALIDATION_ERROR)
+                result.putExtra(ERRORS, response.body()!!.string())
             }
         } catch (exc: Exception) {
-            result.putExtra(RESPONSE_CODE, NO_INTERNET_ACCESS)
+            result.putExtra(SignUpIntentService.RESPONSE_CODE, SignUpIntentService.NO_INTERNET_ACCESS)
         } finally {
-            reply.send(this, RESULT_CODE, result)
+            reply.send(this, SignUpIntentService.RESULT_CODE, result)
         }
-    }
 
+
+    }
 }

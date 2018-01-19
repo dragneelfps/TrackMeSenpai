@@ -1,26 +1,14 @@
 package com.projectk.partners.clientapp
 
-import android.app.Activity
 import android.app.ProgressDialog
 import android.content.Intent
-import android.os.AsyncTask
 import android.os.Bundle
-import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.view.View
-import android.widget.ProgressBar
 import android.widget.Toast
-import com.projectk.partners.clientapp.utils.*
-
+import com.projectk.partners.clientapp.utils.LoginIntentService
 import kotlinx.android.synthetic.main.activity_login.*
 import kotlinx.android.synthetic.main.content_login.*
-import okhttp3.HttpUrl
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody
-import org.json.JSONObject
-import java.lang.ref.WeakReference
 
 class LoginActivity : AppCompatActivity() {
 
@@ -28,7 +16,6 @@ class LoginActivity : AppCompatActivity() {
 
     companion object {
         private val TAG = "LoginActivity"
-        private val REQUEST_SIGNUP = 0
         private val LOGIN_REQUEST = 1
     }
 
@@ -38,14 +25,9 @@ class LoginActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         login.setOnClickListener { login() }
-        register.setOnClickListener {
-            //            val intent = Intent(applicationContext,SignUpActivity::class.java)
-//            startActivityForResult(intent, REQUEST_SIGNUP)
-        }
     }
 
     private fun login() {
-        Log.d(TAG, "Login")
         if (!validate()) {
             login.isEnabled = true
             return
@@ -65,10 +47,11 @@ class LoginActivity : AppCompatActivity() {
         intent.putExtra("pass", password)
         intent.putExtra(LoginIntentService.PENDING_RESULT_EXTRA, pendingResult)
         startService(intent)
-        Log.d(TAG, "End")
+        Log.d(TAG, "Starting Login service")
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == LOGIN_REQUEST) {
             when (resultCode) {
                 LoginIntentService.RESULT_CODE -> {
@@ -76,13 +59,6 @@ class LoginActivity : AppCompatActivity() {
                     progressDialog.dismiss()
                     handlerAuthentication(data)
                 }
-            }
-        }
-
-        if (requestCode == REQUEST_SIGNUP) {
-            if (resultCode == RESULT_OK) {
-
-                this.finish()
             }
         }
     }
@@ -125,13 +101,17 @@ class LoginActivity : AppCompatActivity() {
                 Toast.makeText(this, "Network Error", Toast.LENGTH_LONG).show()
                 onLoginFailed("Network Error")
             }
+            LoginIntentService.SERVER_NOT_FOUND -> {
+                Log.d(TAG, "Server not found")
+                Toast.makeText(this, "Server not found", Toast.LENGTH_LONG).show()
+                onLoginFailed("Server not found")
+            }
         }
-
-
     }
 
     override fun onBackPressed() {
-        moveTaskToBack(true)
+        setResult(MainActivity.RESULT_BACK_PRESSED)
+        super.onBackPressed()
     }
 
     private fun onLoginSuccess() {

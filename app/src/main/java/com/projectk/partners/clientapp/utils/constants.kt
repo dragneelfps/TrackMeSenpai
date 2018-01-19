@@ -9,8 +9,7 @@ import okhttp3.MediaType
 
 val scheme = "http"
 //Use ngrok to tunnel the registration api server and update this string
-val baseUrl = "271cbb94.ngrok.io"
-
+val baseUrl = "0132c6d9.ngrok.io"
 
 val loginClientUrl = "api/client/login"
 val registerClientUrl = "api/client"
